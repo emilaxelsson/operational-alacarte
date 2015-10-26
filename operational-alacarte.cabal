@@ -1,5 +1,5 @@
 name:                operational-alacarte
-version:             0.1
+version:             0.1.1
 synopsis:            A version of Operational suitable for extensible EDSLs
 description:         A version of Operational \[1\] suitable for EDSLs
                      extensible via data types à la carte.
@@ -12,7 +12,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Emil Axelsson
 maintainer:          emax@chalmers.se
-copyright:           Copyright 2015 Emil Axelsson
+copyright:           Copyright 2015 Emil Axelsson, Heinrich Apfelmus
 homepage:            https://github.com/emilaxelsson/operational-alacarte
 bug-reports:         https://github.com/emilaxelsson/operational-alacarte/issues
 category:            Language
