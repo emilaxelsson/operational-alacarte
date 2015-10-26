@@ -74,7 +74,7 @@ instance Interp Loop IO
 instance Interp Ref IO
   where
     interp (NewRef a)   = newIORef (eval a)
-    interp (GetRef r)   = Lit <$> readIORef r
+    interp (GetRef r)   = fmap Lit $ readIORef r
     interp (SetRef r a) = writeIORef r (eval a)
 
 
@@ -110,5 +110,5 @@ prog = do
             (setRef r (a+1))
     singleInj $ GetRef r
 
-main = eval <$> interpret prog
+main = fmap eval $ interpret prog
 
