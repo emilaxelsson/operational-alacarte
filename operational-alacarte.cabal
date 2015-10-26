@@ -1,0 +1,69 @@
+name:                operational-alacarte
+version:             0.1
+synopsis:            A version of Operational suitable for EDSLs extensible via
+                     data types à la carte
+description:         A version of Operational \[1\] suitable for EDSLs
+                     extensible via data types à la carte.
+                     .
+                     More information is found in the documentation of
+                     "Control.Monad.Operational.Higher".
+                     .
+                     \[1\] <http://hackage.haskell.org/package/operational>
+license:             BSD3
+license-file:        LICENSE
+author:              Emil Axelsson
+maintainer:          emax@chalmers.se
+copyright:           Copyright 2015 Emil Axelsson
+homepage:            https://github.com/emilaxelsson/operational-alacarte
+bug-reports:         https://github.com/emilaxelsson/operational-alacarte/issues
+category:            Language
+build-type:          Simple
+cabal-version:       >=1.10
+
+source-repository head
+  type:     git
+  location: git@github.com:emilaxelsson/operational-alacarte.git
+
+library
+  exposed-modules:
+    Data.ALaCarte
+    Control.Monad.Operational.Higher
+
+  default-language: Haskell2010
+
+  default-extensions:
+    ConstraintKinds
+    DefaultSignatures
+    DeriveDataTypeable
+    DeriveFunctor
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    GeneralizedNewtypeDeriving
+    MultiParamTypeClasses
+    Rank2Types
+    ScopedTypeVariables
+    TypeFamilies
+    TypeOperators
+
+  other-extensions:
+    PolyKinds
+    QuasiQuotes
+    UndecidableInstances
+
+  build-depends:
+    array,
+    base >=4 && <5,
+    constraints,
+    containers,
+    exception-transformers,
+    language-c-quote >= 0.11 && < 0.12,
+    lens,
+    mainland-pretty >= 0.4 && < 0.5,
+    mtl,
+    tagged,
+    BoundedChan,
+    srcloc
+
+  hs-source-dirs: src
+
