@@ -32,38 +32,19 @@ library
   default-language: Haskell2010
 
   default-extensions:
-    ConstraintKinds
-    DefaultSignatures
-    DeriveDataTypeable
     DeriveFunctor
-    FlexibleContexts
     FlexibleInstances
     GADTs
-    GeneralizedNewtypeDeriving
+    KindSignatures
     MultiParamTypeClasses
     Rank2Types
     ScopedTypeVariables
     TypeFamilies
     TypeOperators
 
-  other-extensions:
-    PolyKinds
-    QuasiQuotes
-    UndecidableInstances
-
   build-depends:
-    array,
     base >=4 && <5,
-    constraints,
-    containers,
-    exception-transformers,
-    language-c-quote >= 0.11 && < 0.12,
-    lens,
-    mainland-pretty >= 0.4 && < 0.5,
-    mtl,
-    tagged,
-    BoundedChan,
-    srcloc
+    mtl
 
   hs-source-dirs: src
 
