@@ -4,6 +4,17 @@ synopsis:            A version of Operational suitable for extensible EDSLs
 description:         A version of Operational \[1\] suitable for EDSLs
                      extensible via data types à la carte.
                      .
+                     This library provides two important extensions to
+                     Operational:
+                     .
+                     1. The ability for instructions to refer to sub-programs in
+                        a generic way. (This is a key to obtaining an extensible
+                        library.)
+                     .
+                     2. Generic interpretation of programs, including
+                        sub-programs and other sub-structures (e.g.
+                        expressions).
+                     .
                      More information is found in the documentation of
                      "Control.Monad.Operational.Higher".
                      .
@@ -31,15 +42,15 @@ library
   default-language: Haskell2010
 
   default-extensions:
+    DataKinds
     DeriveDataTypeable
     DeriveFunctor
     FlexibleInstances
     GADTs
-    KindSignatures
     MultiParamTypeClasses
+    PolyKinds
     Rank2Types
     ScopedTypeVariables
-    TypeFamilies
     TypeOperators
 
     -- DeriveDataTypeable only needed for GHC < 7.10

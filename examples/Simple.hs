@@ -1,8 +1,31 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeOperators #-}
+
 {-# OPTIONS_GHC -fno-warn-missing-methods #-}
+
+module Simple where
 
 import Data.IORef
 
 import Control.Monad.Operational.Higher
+
+
+
+-- This file demonstrates simple use of the library. Instructions have types of
+-- the form
+--
+--     instr '[p] a
+--
+-- where `p` represents sub-programs.
+--
+-- The `Program` type is specialized to `Program ... '[]`, which means that
+-- we're not interested in exposing any sub-structures of programs.
 
 
 
@@ -35,19 +58,19 @@ eval (Eq a b)  = eval a == eval b
 -- | If statement
 data If p a
   where
-    If :: Exp Bool -> p a -> p a -> If p a
+    If :: Exp Bool -> p a -> p a -> If (Param1 p) a
 
 -- | Loop
 data Loop p a
   where
-    Loop :: Exp Int -> p () -> Loop p ()
+    Loop :: Exp Int -> p () -> Loop (Param1 p) ()
 
 -- | Mutable references
-data Ref (p :: * -> *) a
+data Ref p a
   where
-    NewRef :: Exp a -> Ref p (IORef a)
-    GetRef :: IORef a -> Ref p (Exp a)
-    SetRef :: IORef a -> Exp a -> Ref p ()
+    NewRef :: Exp a -> Ref (Param1 p) (IORef a)
+    GetRef :: IORef a -> Ref (Param1 p) (Exp a)
+    SetRef :: IORef a -> Exp a -> Ref (Param1 p) ()
 
 instance HFunctor If
   where
@@ -63,15 +86,15 @@ instance HFunctor Ref
     hfmap f (GetRef r)   = GetRef r
     hfmap f (SetRef r a) = SetRef r a
 
-instance Interp If IO
+instance Interp If IO fs
   where
     interp (If c thn els) = if eval c then thn else els
 
-instance Interp Loop IO
+instance Interp Loop IO fs
   where
     interp (Loop n body) = replicateM_ (eval n) body
 
-instance Interp Ref IO
+instance Interp Ref IO fs
   where
     interp (NewRef a)   = newIORef (eval a)
     interp (GetRef r)   = fmap Lit $ readIORef r
@@ -83,7 +106,7 @@ instance Interp Ref IO
 -- Example
 --------------------------------------------------------------------------------
 
-type MyProgram a = Program (If :+: Loop :+: Ref) a
+type MyProgram = Program (If :+: Loop :+: Ref) Param0
 
 iff :: Exp Bool -> MyProgram a -> MyProgram a -> MyProgram a
 iff c thn els = singleInj $ If c thn els
@@ -108,7 +131,7 @@ prog = do
         iff (Eq a 3)
             (setRef r 100)
             (setRef r (a+1))
-    singleInj $ GetRef r
+    getRef r
 
 main = fmap eval $ interpret prog
 
