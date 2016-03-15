@@ -410,6 +410,14 @@ class HBifunctor i => Reexpressible i instr
       -- which `reexpressInstrEnv` can be defined (among common monads). E.g.
       -- the above trick with `runReaderT` doesn't work for `StateT`.
 
+instance (Reexpressible i1 instr, Reexpressible i2 instr) =>
+    Reexpressible (i1 :+: i2) instr
+  where
+    reexpressInstr    reexp (Inl i) = reexpressInstr    reexp i
+    reexpressInstr    reexp (Inr i) = reexpressInstr    reexp i
+    reexpressInstrEnv reexp (Inl i) = reexpressInstrEnv reexp i
+    reexpressInstrEnv reexp (Inr i) = reexpressInstrEnv reexp i
+
 -- | Rewrite a program changing its expression type (assuming that the second
 -- sub-structure of the instruction type represents expressions)
 --
