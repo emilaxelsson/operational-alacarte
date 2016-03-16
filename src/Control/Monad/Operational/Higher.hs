@@ -114,6 +114,91 @@
 -- function 'interpret' mentioned above requires the instruction @i@ to be a
 -- higher-order functor, but it also works for high-order bi-functors, and for
 -- the last version of @If@ that has an additional parameter @pred@.
+--
+-- = Typical use
+--
+-- Here we give specialized type signatures for a selection of functions for
+-- different uses of the general interface.
+--
+-- .
+--
+-- __Functorial instructions with no extra parameters__
+--
+-- This scenario is used in <https://github.com/emilaxelsson/operational-alacarte/blob/master/examples/Simple.hs>.
+--
+-- @
+-- `singleton` :: instr (`Param1` (`ProgramT` instr `Param0` m)) a -> `ProgramT` instr `Param0` m a
+--
+-- `interpretWithMonad`
+--     :: (`HFunctor` instr, `Monad` m)
+--     => (forall b . instr (`Param1` m) b -> m b)
+--     -> `Program` instr `Param0` a -> m a
+--
+-- `interpret`
+--     :: (`Interp` i m `Param0`, `HFunctor` i, `Monad` m)
+--     => `Program` i `Param0` a -> m a
+-- @
+--
+-- .
+--
+-- __Functorial instructions with extra parameter__
+--
+-- Like the previous scenario but with an extra parameter @p@ (poly-kinded) that instructions can use for anything.
+--
+-- @
+-- `singleton` :: instr (`Param2` (`ProgramT` instr (`Param1` p) m) p) a -> `ProgramT` instr (`Param1` p) m a
+--
+-- `interpretWithMonad`
+--     :: (`HFunctor` instr, `Monad` m)
+--     => (forall b . instr (`Param2` m p) b -> m b)
+--     -> `Program` instr (`Param1` p) a -> m a
+--
+-- `interpret`
+--     :: (`Interp` i m (`Param1` p), `HFunctor` i, `Monad` m)
+--     => `Program` i (`Param1` p) a -> m a
+-- @
+--
+-- .
+--
+-- __Bi-functorial instructions with no extra parameters__
+--
+-- This scenario is used in <https://github.com/emilaxelsson/operational-alacarte/blob/master/examples/Advanced.hs>.
+--
+-- The parameter @exp@ is an extra interpreted structure that e.g. can represent expressions.
+--
+-- @
+-- `singleton` :: instr (`Param2` (`ProgramT` instr (`Param1` exp) m) exp) a -> `ProgramT` instr (`Param1` exp) m a
+--
+-- `interpretWithMonadBi`
+--     :: (`HBifunctor` instr, `Functor` m, `Monad` m)
+--     => (forall b . exp b -> m b)
+--     -> (forall b . instr (`Param2` m m) b -> m b)
+--     -> `Program` instr (`Param1` exp) a -> m a
+--
+-- `interpret`
+--     :: (`InterpBi` i m `Param0`, `HBifunctor` i, `Functor` m, `Monad` m)
+--     => (forall b . exp b -> m b) -> `Program` i (`Param1` exp) a -> m a
+-- @
+--
+-- .
+--
+-- __Bi-functorial instructions with extra parameter__
+--
+-- Like the previous scenario but with an extra parameter @p@ (poly-kinded) that instructions can use for anything.
+--
+-- @
+-- `singleton` :: instr (`Param3` (`ProgramT` instr (`Param2` exp p) m) exp p) a -> `ProgramT` instr (`Param2` exp p) m a
+--
+-- `interpretWithMonadBi`
+--     :: (`HBifunctor` instr, `Functor` m, `Monad` m)
+--     => (forall b . exp b -> m b)
+--     -> (forall b . instr (`Param3` m m p) b -> m b)
+--     -> `Program` instr (`Param2` exp p) a -> m a
+--
+-- `interpret`
+--     :: (`InterpBi` i m (`Param1` p), `HBifunctor` i, `Functor` m, `Monad` m)
+--     => (forall b . exp b -> m b) -> `Program` i (`Param2` exp p) a -> m a
+-- @
 
 module Control.Monad.Operational.Higher
     ( module Control.Monad
