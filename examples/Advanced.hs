@@ -9,7 +9,7 @@
 
 {-# OPTIONS_GHC -fno-warn-missing-methods #-}
 
-module Simple where
+module Advanced where
 
 import Data.IORef
 
@@ -17,15 +17,24 @@ import Control.Monad.Operational.Higher
 
 
 
--- This file demonstrates simple use of the library. Instructions have types of
--- the form
+-- This file is a version of `Simple.hs` where we want to expose the fact that
+-- programs have expressions as sub-structures. To do this, we use instructions
+-- with types of the form
 --
---     instr '[p] a
+--     instr (Param2 p e) a
 --
--- where `p` represents sub-programs.
+-- where `p` represents sub-programs and `e` represents expressions.
 --
--- The `Program` type is specialized to `Program ... '[]`, which means that
--- we're not interested in exposing any sub-structures of programs.
+-- The `Program` type is now specialized to `Program ... '[Exp]`.
+--
+-- By exposing expressions in this way, we decouple the interpretation of
+-- instructions from that of expressions. This can be seen in the example below
+-- which defines
+--
+--     main = fmap eval $ interpretBi (return . eval) prog
+--
+-- The interpretation of instructions is obtained from the `InterpBi` class,
+-- while the interpretation of expressions is provided separately.
 
 
 
@@ -55,22 +64,26 @@ eval (Eq a b)  = eval a == eval b
 -- Composable instructions
 --------------------------------------------------------------------------------
 
+data Val a = Val a
+
 -- | If statement
-data If p a
+data If fs a
   where
-    If :: Exp Bool -> p a -> p a -> If (Param1 p) a
+    If :: e Bool -> p a -> p a -> If (Param2 p e) a
 
 -- | Loop
-data Loop p a
+data Loop fs a
   where
-    Loop :: Exp Int -> p () -> Loop (Param1 p) ()
+    Loop :: e Int -> p () -> Loop (Param2 p e) ()
 
 -- | Mutable references
-data Ref p a
+data Ref fs a
   where
-    NewRef :: Exp a -> Ref (Param1 p) (IORef a)
-    GetRef :: IORef a -> Ref (Param1 p) (Exp a)
-    SetRef :: IORef a -> Exp a -> Ref (Param1 p) ()
+    NewRef :: e a -> Ref (Param2 p e) (IORef a)
+    GetRef :: IORef a -> Ref (Param2 p e) (Val a)
+    SetRef :: IORef a -> e a -> Ref (Param2 p e) ()
+  -- Note: `GetRef` cannot return `exp a` as that would prevent writing the
+  -- `HBifunctor` instance.
 
 instance HFunctor If
   where
@@ -86,19 +99,33 @@ instance HFunctor Ref
     hfmap f (GetRef r)   = GetRef r
     hfmap f (SetRef r a) = SetRef r a
 
-instance Interp If IO fs
+instance HBifunctor If
   where
-    interp (If c thn els) = if eval c then thn else els
+    hbimap f g (If c thn els) = If (g c) (f thn) (f els)
 
-instance Interp Loop IO fs
+instance HBifunctor Loop
   where
-    interp (Loop n body) = replicateM_ (eval n) body
+    hbimap f g (Loop n body) = Loop (g n) (f body)
 
-instance Interp Ref IO fs
+instance HBifunctor Ref
   where
-    interp (NewRef a)   = newIORef (eval a)
-    interp (GetRef r)   = fmap Lit $ readIORef r
-    interp (SetRef r a) = writeIORef r (eval a)
+    hbimap _ g (NewRef a)   = NewRef (g a)
+    hbimap _ g (GetRef r)   = GetRef r
+    hbimap _ g (SetRef r a) = SetRef r (g a)
+
+instance InterpBi If IO fs
+  where
+    interpBi (If c thn els) = c >>= \c' -> if c' then thn else els
+
+instance InterpBi Loop IO fs
+  where
+    interpBi (Loop n body) = n >>= \n' -> replicateM_ n' body
+
+instance InterpBi Ref IO fs
+  where
+    interpBi (NewRef a)   = newIORef =<< a
+    interpBi (GetRef r)   = fmap Val $ readIORef r
+    interpBi (SetRef r a) = writeIORef r =<< a
 
 
 
@@ -106,7 +133,7 @@ instance Interp Ref IO fs
 -- Example
 --------------------------------------------------------------------------------
 
-type MyProgram = Program (If :+: Loop :+: Ref) Param0
+type MyProgram a = Program (If :+: Loop :+: Ref) (Param1 Exp) a
 
 iff :: Exp Bool -> MyProgram a -> MyProgram a -> MyProgram a
 iff c thn els = singleInj $ If c thn els
@@ -118,7 +145,9 @@ newRef :: Exp a -> MyProgram (IORef a)
 newRef = singleInj . NewRef
 
 getRef :: IORef a -> MyProgram (Exp a)
-getRef = singleInj . GetRef
+getRef r = do
+    Val a <- singleInj $ GetRef r
+    return $ Lit a
 
 setRef :: IORef a -> Exp a -> MyProgram ()
 setRef r = singleInj . SetRef r
@@ -133,5 +162,5 @@ prog = do
             (setRef r (a+1))
     getRef r
 
-main = fmap eval $ interpret prog
+main = fmap eval $ interpretBi (return . eval) prog
 
