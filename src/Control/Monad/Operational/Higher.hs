@@ -472,17 +472,21 @@ class HBifunctor i => Reexpressible i instr
     -- As an example of how to define this function, take the following
     -- instruction that just puts a tag on a sub-program:
     --
-    -- > data Tag fs a
-    -- >   where
-    -- >     Tag :: String -> prog () -> Tag (Param2 prog exp) ()
+    -- @
+    -- data Tag fs a
+    --   where
+    --     Tag :: `String` -> prog () -> Tag (`Param2` prog exp) ()
+    -- @
     --
     -- To define `reexpressInstrEnv` we have to use a combination of `ReaderT`
     -- and `runReaderT`:
     --
-    -- > instance (Tag :<: instr) => Reexpressible Tag instr
-    -- >   where
-    -- >     reexpressInstrEnv reexp (Tag tag prog) = ReaderT $ \env ->
-    -- >         singleInj $ Tag tag (flip runReaderT env prog)
+    -- @
+    -- instance (Tag `:<:` instr) => `Reexpressible` Tag instr
+    --   where
+    --     `reexpressInstrEnv` reexp (Tag tag prog) = `ReaderT` `$` \env ->
+    --         `singleInj` `$` Tag tag (`flip` `runReaderT` env prog)
+    -- @
     reexpressInstrEnv :: Monad m
         => ( forall b .
                exp1 b -> ReaderT env (ProgramT instr '(exp2,fs) m) (exp2 b)
