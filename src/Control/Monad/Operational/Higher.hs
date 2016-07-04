@@ -454,19 +454,8 @@ interpretBi inte = interpretWithMonadBi inte interpBi
 --
 -- @e1@ and @e2@ typically represent expressions; hence the name
 -- \"reexpressible\".
-class HBifunctor i => Reexpressible i instr
+class HBifunctor i => Reexpressible i instr env
   where
-    -- | Rewrite an instruction changing its \"expression\" sub-structure
-    reexpressInstr :: Monad m
-        => (forall b . exp1 b -> ProgramT instr '(exp2,fs) m (exp2 b))
-             -- ^ Conversion of the \"expression\" sub-structure
-        -> i '(ProgramT instr '(exp2,fs) m, '(exp1, fs)) a
-        -> ProgramT instr '(exp2,fs) m a
-    reexpressInstr reexp
-        = flip runReaderT ()
-        . reexpressInstrEnv (lift . reexp)
-        . hbimap lift id
-
     -- | Rewrite an instruction changing its \"expression\" sub-structure
     --
     -- As an example of how to define this function, take the following
@@ -499,11 +488,20 @@ class HBifunctor i => Reexpressible i instr
       -- which `reexpressInstrEnv` can be defined (among common monads). E.g.
       -- the above trick with `runReaderT` doesn't work for `StateT`.
 
-instance (Reexpressible i1 instr, Reexpressible i2 instr) =>
-    Reexpressible (i1 :+: i2) instr
+-- | Rewrite an instruction changing its \"expression\" sub-structure
+reexpressInstr :: (Reexpressible i instr (), Monad m)
+    => (forall b . exp1 b -> ProgramT instr '(exp2,fs) m (exp2 b))
+         -- ^ Conversion of the \"expression\" sub-structure
+    -> i '(ProgramT instr '(exp2,fs) m, '(exp1, fs)) a
+    -> ProgramT instr '(exp2,fs) m a
+reexpressInstr reexp
+    = flip runReaderT ()
+    . reexpressInstrEnv (lift . reexp)
+    . hbimap lift id
+
+instance (Reexpressible i1 instr env, Reexpressible i2 instr env) =>
+    Reexpressible (i1 :+: i2) instr env
   where
-    reexpressInstr    reexp (Inl i) = reexpressInstr    reexp i
-    reexpressInstr    reexp (Inr i) = reexpressInstr    reexp i
     reexpressInstrEnv reexp (Inl i) = reexpressInstrEnv reexp i
     reexpressInstrEnv reexp (Inr i) = reexpressInstrEnv reexp i
 
@@ -513,7 +511,7 @@ instance (Reexpressible i1 instr, Reexpressible i2 instr) =>
 -- Conversion of expressions is done in the target monad, so pure expressions
 -- are allowed to expand to monadic code. This can be used e.g. to \"compile\"
 -- complex expressions into simple expressions with supporting monadic code.
-reexpress :: (Reexpressible instr1 instr2, Monad m)
+reexpress :: (Reexpressible instr1 instr2 (), Monad m)
     => (forall b . exp1 b -> ProgramT instr2 '(exp2,fs) m (exp2 b))
          -- ^ Conversion of expressions
     -> ProgramT instr1 '(exp1,fs) m a -> ProgramT instr2 '(exp2,fs) m a
@@ -525,7 +523,7 @@ reexpress reexp p = interpretWithMonadT (reexpressInstr reexp) lift p
 -- Conversion of expressions is done in the target monad, so pure expressions
 -- are allowed to expand to monadic code. This can be used e.g. to \"compile\"
 -- complex expressions into simple expressions with supporting monadic code.
-reexpressEnv :: (Reexpressible instr1 instr2, Monad m)
+reexpressEnv :: (Reexpressible instr1 instr2 env, Monad m)
     => ( forall b .
             exp1 b -> ReaderT env (ProgramT instr2 '(exp2,fs) m) (exp2 b)
        )

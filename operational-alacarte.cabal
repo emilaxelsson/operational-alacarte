@@ -1,5 +1,5 @@
 name:                operational-alacarte
-version:             0.2
+version:             0.3
 synopsis:            A version of Operational suitable for extensible EDSLs
 description:         A version of Operational \[1\] suitable for EDSLs
                      extensible via data types à la carte.
@@ -46,6 +46,7 @@ library
     DataKinds
     DeriveDataTypeable
     DeriveFunctor
+    FlexibleContexts
     FlexibleInstances
     GADTs
     MultiParamTypeClasses
