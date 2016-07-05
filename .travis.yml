@@ -1,30 +1,52 @@
-# Based on: https://github.com/hvr/multi-ghc-travis
-# and:      https://raw.githubusercontent.com/haskell-suite/haskell-src-exts/master/.travis.yml
+# Inspired by
+# https://github.com/hvr/multi-ghc-travis/blob/master/make_travis_yml_2.hs
 
-env:
- - CABALVER=1.18 GHCVER=7.6.3
- - CABALVER=1.18 GHCVER=7.8.3
- - CABALVER=1.22 GHCVER=7.10.2
- - CABALVER=1.24 GHCVER=8.0.1
+sudo: false
+language: c
+
+cache:
+  directories:
+    - $HOME/.cabal
+
+matrix:
+  include:
+    - env: CABALVER=1.24 GHCVER=7.6.3
+      addons: {apt: {sources: [hvr-ghc], packages: [cabal-install-1.24,ghc-7.6.3,happy-1.19.5,alex-3.1.7]}}
+    - env: CABALVER=1.24 GHCVER=7.8.4
+      addons: {apt: {sources: [hvr-ghc], packages: [cabal-install-1.24,ghc-7.8.4,happy-1.19.5,alex-3.1.7]}}
+    - env: CABALVER=1.24 GHCVER=7.10.3
+      addons: {apt: {sources: [hvr-ghc], packages: [cabal-install-1.24,ghc-7.10.3,happy-1.19.5,alex-3.1.7]}}
+    - env: CABALVER=1.24 GHCVER=8.0.1
+      addons: {apt: {sources: [hvr-ghc], packages: [cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7]}}
+    - env: CABALVER=head GHCVER=head
+      addons: {apt: {sources: [hvr-ghc], packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.7]}}
+
+  allow_failures:
+    - env: CABALVER=head GHCVER=head
 
 before_install:
- - travis_retry sudo add-apt-repository -y ppa:hvr/ghc
- - travis_retry sudo apt-get update
- - travis_retry sudo apt-get install cabal-install-$CABALVER ghc-$GHCVER
- - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
+  - env
+  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
+  - export PATH=/opt/alex/3.1.7/bin:/opt/happy/1.19.5/bin:$PATH
 
 install:
- - cabal --version
- - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
- - travis_retry cabal update
- - cabal sandbox init
- - cabal install --only-dependencies --enable-tests --enable-benchmarks
+  - cabal --version
+  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
+  - travis_retry cabal update -v
+  - cabal new-build --enable-tests --enable-benchmarks --dependencies
 
 script:
- - cabal configure --enable-tests --enable-benchmarks -v2
- - cabal build
- - cabal test
- - cabal check
- - cabal sdist
- - SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
-   (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
+  - cabal new-build --enable-tests --enable-benchmarks -v2
+  - TESTS=( $(awk 'tolower($0) ~ /^test-suite / { print $2 }' *.cabal) );
+    RC=true; for T in ${TESTS[@]}; do echo "== $T ==";
+    if dist-newstyle/build/*/build/$T/$T; then echo "= $T OK =";
+    else echo "= $T FAILED ="; RC=false; fi; done; $RC
+  - cabal check
+  - cabal sdist
+  # Check that the resulting source distribution can be built
+  - SRC_BASENAME=$(cabal info . | awk '{print $2;exit}')
+  - tar -C dist/ -xf dist/$SRC_BASENAME.tar.gz
+  - "echo 'packages: *.cabal' > dist/$SRC_BASENAME/cabal.project"
+  - cd dist/$SRC_BASENAME/
+  - cabal new-build --enable-tests --enable-benchmarks --disable-optimization
+
