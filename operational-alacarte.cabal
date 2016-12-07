@@ -63,7 +63,7 @@ library
     -- DeriveDataTypeable only needed for GHC < 7.10
 
   build-depends:
-    base >=4 && <5,
+    base >=4.6 && <5,
     mtl
 
   hs-source-dirs: src
