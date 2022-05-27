@@ -272,12 +272,12 @@ instance Monad m => Functor (ProgramT instr fs m)
 
 instance Monad m => Applicative (ProgramT instr fs m)
   where
-    pure  = return
+    pure  = Lift . pure
     (<*>) = ap
 
 instance Monad m => Monad (ProgramT instr fs m)
   where
-    return = Lift . return
+    return = pure
     (>>=)  = Bind
 
 instance MonadTrans (ProgramT instr fs)
